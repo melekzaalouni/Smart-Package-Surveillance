@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sentinel · Smart Package Surveillance</title>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('theme')||(matchMedia('(prefers-color-scheme:light)').matches?'light':'dark')}catch(e){document.documentElement.dataset.theme='dark'}</script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27 fill=%27none%27 stroke=%27%238FAAB5%27 stroke-width=%271.8%27%3E%3Cpath d=%27M12 3 4.500 6v5.500c0 4.500 3.100 8 7.500 9.500 4.400-1.500 7.500-5 7.500-9.500V6L12 3Z%27/%3E%3Cpath d=%27m9 12 2.200 2.200L15.500 10%27/%3E%3C/svg%3E"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ===== Signal & Steel tokens — all colour lives here ===== */
+@property --x{syntax:'<length>';inherits:true;initial-value:0px}
+:root{--mx:-400px;--my:-400px}
+:root,[data-theme=dark]{--bg:#0C0A1F;--bg2:#120F2B;--card:#171340;--line:#2C2766;--tx:#F3F0FF;--tx2:#A9A3D6;--ac:#A78BFF;--warn:#FFB938;--crit:#FF5470;--ok:#3FE0A0;--on-ac:#0C0A1F;--sh:inset 0 1px 0 rgba(167,139,255,.12);--scrim:rgba(5,4,16,.7);--vig:rgba(4,3,14,.62);--grain:.16;--lift:rgba(167,139,255,.2);--uv:#A78BFF;--uvblend:screen;--paper:.05;color-scheme:dark}
+[data-theme=light]{--bg:#EFE6D2;--bg2:#F7F1E3;--card:#FCF9F0;--line:#D8CCB0;--tx:#1B2133;--tx2:#6A6350;--ac:#3A2FC4;--warn:#B3731A;--crit:#C0362C;--ok:#26784F;--on-ac:#FCF9F0;--sh:0 1px 0 rgba(27,33,51,.05),0 14px 30px -18px rgba(70,52,20,.35);--scrim:rgba(27,33,51,.4);--vig:rgba(70,52,20,.2);--grain:.12;--lift:rgba(255,255,255,.75);--uv:#3A2FC4;--uvblend:multiply;--paper:.09;color-scheme:light}
+*{box-sizing:border-box;margin:0}
+html{font:15px/1.5 'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif}
+body{background:var(--bg);color:var(--tx);min-height:100vh;font-variant-numeric:tabular-nums;caret-color:var(--ac);scrollbar-color:var(--line) transparent}
+::selection{background:var(--ac);color:var(--on-ac)}
+body,.card,header,aside,input,select,button,dialog,td,th,.chip,.alert{transition:background-color .25s,color .25s,border-color .25s}
+svg.i{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex:none}
+:focus-visible{outline:2px solid var(--ac);outline-offset:3px}
+button,select,input{font:inherit;color:inherit}
+.dsp,header h1,.kpi b,.read .v,.auth h2,.cube em{font-family:'Big Shoulders Display','IBM Plex Sans Arabic',sans-serif}
+.btn{display:inline-flex;gap:8px;align-items:center;border:1px solid var(--line);background:var(--bg2);border-radius:2px;padding:8px 14px;cursor:pointer;font-weight:500;transition:transform .15s,border-color .2s,background-color .25s}
+.btn:hover{border-color:var(--ac)}.btn:active{transform:scale(.96)}
+.btn.p{background:var(--ac);border-color:var(--ac);color:var(--on-ac)}
+.btn.ic{padding:8px;border-radius:50%}
+input,select{background:var(--bg);border:1px solid var(--line);border-radius:2px;padding:9px 11px;width:100%}
+input:focus{border-color:var(--ac)}
+select.sm{width:auto;padding:4px 8px}
+label{display:block;font-size:13px;color:var(--tx2);margin:14px 0 4px}
+/* shell: icon rail + big title */
+.app{padding-inline-start:72px}
+aside{position:fixed;top:0;bottom:0;inset-inline-start:0;width:72px;overflow:hidden;white-space:nowrap;background:var(--bg2);border-inline-end:1px solid var(--line);padding:22px 0;z-index:5;transition:width .4s cubic-bezier(.16,1,.3,1),box-shadow .4s}
+aside:hover,aside:focus-within{width:236px;box-shadow:var(--sh)}
+aside .brand,.nav a{font-size:0;display:flex;align-items:center;gap:14px;padding-inline:24px}
+aside .brand{margin-bottom:26px;font-weight:600;letter-spacing:.02em;color:var(--tx)}
+aside .brand svg{width:26px;height:26px;color:var(--ac)}
+aside:hover .brand,aside:focus-within .brand,aside:hover .nav a,aside:focus-within .nav a{font-size:15px}
+.nav a{height:46px;color:var(--tx2);cursor:pointer;position:relative}
+.nav a:hover{color:var(--tx);background:var(--bg)}
+.nav a[aria-current=page]{color:var(--tx);background:color-mix(in srgb,var(--ac) 16%,transparent)}
+.nav a[aria-current=page] svg{color:var(--ac)}
+header{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;padding:30px 40px 16px;border-bottom:1px solid var(--line)}
+header h1{font-size:clamp(38px,5.4vw,66px);font-weight:800;line-height:.9;text-transform:uppercase;letter-spacing:.01em}
+.who{display:flex;gap:12px;align-items:center;color:var(--tx2);font-size:13px;flex-wrap:wrap}
+main{padding:26px 40px 56px}
+/* panels with registration marks */
+.card{position:relative;background:var(--card);border:1px solid var(--line);border-radius:3px;box-shadow:var(--sh);padding:20px}
+.card::before,.card::after{content:"";position:absolute;width:10px;height:10px;border:0 solid var(--ac);pointer-events:none}
+.card::before{top:-1px;inset-inline-start:-1px;border-block-start-width:2px;border-inline-start-width:2px}
+.card::after{bottom:-1px;inset-inline-end:-1px;border-block-end-width:2px;border-inline-end-width:2px}
+.card:hover{border-color:color-mix(in srgb,var(--ac) 40%,var(--line))}
+.card h2{font:600 12px 'IBM Plex Sans','IBM Plex Sans Arabic',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--tx2);margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);border-block:1px solid var(--line);margin-bottom:26px}
+.kpis .card{background:none;border:0;box-shadow:none;border-radius:0;padding:18px 24px;border-inline-end:1px solid var(--line)}
+.kpis .card:last-child{border-inline-end:0}.kpis .card::before,.kpis .card::after{display:none}
+.kpi{display:flex;flex-direction:column-reverse;gap:2px}
+.kpi b{font-size:54px;font-weight:700;line-height:1}
+.kpi span{color:var(--tx2);font-size:13px}
+.split{display:grid;grid-template-columns:290px 1fr;gap:20px;align-items:start}
+.stack>*+*{margin-top:20px}
+.row{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:12px;border:1px solid transparent;border-radius:2px;cursor:pointer;transition:background-color .2s,border-color .2s}
+.row:hover{background:var(--bg)}
+.row[aria-selected=true]{background:var(--bg);border-color:var(--ac)}
+.row small{color:var(--tx2);display:block;font-size:12px}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--tx2);flex:none}
+.dot.ok{background:var(--ok)}.dot.warn{background:var(--warn)}.dot.crit{background:var(--crit)}
+.chip{display:inline-flex;gap:6px;align-items:center;font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;padding:3px 9px;border-radius:2px;border:1px solid var(--line);color:var(--tx2)}
+.chip.ok{color:var(--ok);border-color:currentColor;background:color-mix(in srgb,var(--ok) 11%,transparent)}
+.chip.warn{color:var(--warn);border-color:currentColor;background:color-mix(in srgb,var(--warn) 11%,transparent)}
+.chip.crit{color:var(--crit);border-color:currentColor;background:color-mix(in srgb,var(--crit) 11%,transparent)}
+.twin{display:grid;grid-template-columns:minmax(220px,290px) 1fr;gap:22px;align-items:center}
+.reads{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.twin .reads{grid-template-columns:1fr 1fr}
+.read{border:1px solid var(--line);border-radius:2px;padding:14px 16px;background:var(--bg2)}
+.read .l{display:flex;gap:8px;align-items:center;color:var(--tx2);font-size:13px}
+.read .v{font-size:40px;font-weight:700;line-height:1.05;margin-top:8px}
+.read .v small{font:400 13px 'IBM Plex Sans',sans-serif;color:var(--tx2)}
+.read.warn{border-color:var(--warn)}.read.warn .v{color:var(--warn)}
+.read.crit{border-color:var(--crit);background:color-mix(in srgb,var(--crit) 8%,var(--bg2))}.read.crit .v{color:var(--crit)}
+.read.ok .l svg{color:var(--ok)}
+.charts{display:grid;grid-template-columns:1fr 1fr;gap:18px}.charts svg{width:100%;height:auto;display:block}
+.cap{font-size:12px;color:var(--tx2);margin-bottom:4px;display:flex;justify-content:space-between}
+dl{display:grid;grid-template-columns:auto 1fr;gap:7px 18px;font-size:14px}dt{color:var(--tx2)}dd{text-align:end}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:start;color:var(--tx2);font-weight:500;font-size:12px;letter-spacing:.06em;padding:8px 10px;border-bottom:1px solid var(--line)}
+td{padding:11px 10px;border-bottom:1px solid var(--line)}tr:last-child td{border-bottom:0}
+.scroll{overflow-x:auto}
+.alert{display:flex;gap:12px;padding:13px 14px;border-radius:2px;border:1px solid var(--line);background:var(--bg2);align-items:flex-start}
+.alert+.alert{margin-top:8px}
+.alert.crit{border-color:var(--crit);background:color-mix(in srgb,var(--crit) 9%,var(--bg2))}.alert.crit>svg{color:var(--crit)}
+.alert.warn{border-color:var(--warn);background:color-mix(in srgb,var(--warn) 9%,var(--bg2))}.alert.warn>svg{color:var(--warn)}
+.alert.done{opacity:.55}.alert div{flex:1}.alert small{color:var(--tx2);display:block}
+.empty{color:var(--tx2);padding:22px;text-align:center;font-size:14px}
+dialog{border:1px solid var(--line);border-radius:3px;background:var(--card);color:var(--tx);padding:24px;width:min(420px,92vw)}
+dialog::backdrop{background:var(--scrim)}
+#toast{position:fixed;bottom:22px;inset-inline-end:22px;background:var(--card);border:1px solid var(--ac);padding:12px 18px;border-radius:2px;box-shadow:var(--sh);opacity:0;transform:translateY(10px);transition:.3s;pointer-events:none;z-index:9}
+#toast.on{opacity:1;transform:none}#toast.err{border-color:var(--crit)}
+.steps{display:flex;gap:4px;margin-bottom:16px}.steps div{flex:1;font-size:12px;color:var(--tx2);position:relative;padding-top:12px}.steps i{position:absolute;top:0;left:0;right:0;height:3px;background:var(--line)}.steps .on{color:var(--tx)}.steps .on i{background:var(--ac)}
+.err{color:var(--crit);font-size:13px;min-height:20px;margin-top:10px}
+.link{background:none;border:0;color:var(--ac);cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:3px}
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:var(--paper);mix-blend-mode:multiply;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
+#uv{position:fixed;inset:0;z-index:40;pointer-events:none;mix-blend-mode:var(--uvblend);
+background:radial-gradient(circle 90px at var(--mx) var(--my),color-mix(in srgb,var(--uv) 14%,transparent),transparent),repeating-radial-gradient(circle at 28% 38%,var(--uv) 0 1px,transparent 1px 6px),repeating-radial-gradient(circle at 71% 62%,var(--uv) 0 1px,transparent 1px 6px),repeating-linear-gradient(115deg,transparent 0 11px,var(--uv) 11px 12px);
+-webkit-mask-image:radial-gradient(circle 75px at var(--mx) var(--my),#000 0,transparent 100%);mask-image:radial-gradient(circle 75px at var(--mx) var(--my),#000 0,transparent 100%)}
+/* ===== the parcel digital twin (CSS 3D) ===== */
+.stage{--s:120px;perspective:900px;display:grid;place-items:center;height:calc(var(--s)*1.9);position:relative}
+.stage::before{content:"";position:absolute;bottom:9%;width:calc(var(--s)*1.7);height:calc(var(--s)*.42);border-radius:50%;background:radial-gradient(closest-side,color-mix(in srgb,var(--tx) 26%,transparent),transparent);filter:blur(5px)}
+.stage::after{content:"";position:absolute;bottom:9%;width:calc(var(--s)*.9);height:calc(var(--s)*.26);border:1px solid var(--tc);border-radius:50%;animation:ping 3.2s ease-out infinite}
+.cube{width:var(--s);height:var(--s);position:relative;transform-style:preserve-3d;animation:orbit 24s linear infinite;transition:filter .6s}
+.f{position:absolute;inset:0;background:color-mix(in srgb,var(--ac) 22%,var(--card));border:1px solid color-mix(in srgb,var(--ac) 60%,var(--line));animation:asm 1.5s cubic-bezier(.16,1,.3,1) both}
+.fr{transform:translateZ(calc(var(--s)/2 + var(--x)))}
+.bk{transform:rotateY(180deg) translateZ(calc(var(--s)/2 + var(--x)));filter:brightness(.8)}
+.rt{transform:rotateY(90deg) translateZ(calc(var(--s)/2 + var(--x)));filter:brightness(.9)}
+.lf{transform:rotateY(-90deg) translateZ(calc(var(--s)/2 + var(--x)));filter:brightness(.85)}
+.bt{transform:rotateX(-90deg) translateZ(calc(var(--s)/2 + var(--x)));filter:brightness(.7)}
+.lid{transform-origin:50% 0;transform:translateY(calc(var(--x)*-1)) translateZ(calc(var(--s)/-2)) rotateX(90deg);transition:transform 1s cubic-bezier(.34,1.5,.64,1);filter:brightness(1.12)}
+.lid u{position:absolute;inset:0 41%;background:var(--ac)}
+.cube.open .lid{transform:translateZ(calc(var(--s)/-2)) rotateX(198deg)}
+.cube.open .lid u{background:var(--crit);clip-path:polygon(0 0,100% 0,100% 36%,60% 46%,100% 62%,30% 100%,0 100%)}
+.cube.open .bt{background:color-mix(in srgb,var(--crit) 58%,var(--bg));filter:none}
+.cube.open{filter:drop-shadow(0 6px 22px color-mix(in srgb,var(--crit) 50%,transparent))}
+.cube em{position:absolute;inset-inline:15%;bottom:11%;font-style:normal;font-weight:800;font-size:calc(var(--s)*.15);line-height:1;text-transform:uppercase;color:var(--tx);letter-spacing:.03em}
+.gauge{position:absolute;inset-block:13%;inset-inline-start:9%;width:calc(var(--s)*.04);background:var(--line);overflow:hidden}
+.gauge::after{content:"";position:absolute;bottom:0;width:100%;height:var(--p);background:var(--tc)}
+.stage.shock{animation:shake .5s 4}
+@keyframes orbit{from{transform:rotateX(-20deg) rotateY(-30deg)}to{transform:rotateX(-20deg) rotateY(330deg)}}
+@keyframes asm{from{--x:150px;opacity:0}}
+@keyframes ping{from{transform:scale(.4);opacity:.9}to{transform:scale(2.3);opacity:0}}
+@keyframes shake{25%{transform:translateX(-6px) rotate(-1deg)}75%{transform:translateX(6px) rotate(1deg)}}
+@keyframes rise{from{opacity:0;transform:translateY(16px)}}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 55%,transparent)}70%,100%{box-shadow:0 0 0 8px transparent}}
+@keyframes glow{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--crit) 60%,transparent)}100%{box-shadow:0 0 0 14px transparent}}
+@keyframes drift{from{transform:translateY(0)}to{transform:translateY(-14px)}}
+.enter .card,.enter .kpi{animation:rise .65s cubic-bezier(.16,1,.3,1) both}
+.enter polyline{stroke-dasharray:1;stroke-dashoffset:1;animation:draw 1.4s .35s cubic-bezier(.4,0,.2,1) forwards}
+.dot.ok{animation:pulse 2.6s infinite}.alert.fresh{animation:glow 1.8s ease-out 2}
+/* ===== login: studio scene ===== */
+.auth{min-height:100vh;display:grid;grid-template-columns:1.3fr 1fr}
+.scene{position:relative;overflow:hidden;isolation:isolate;min-height:100%;background:radial-gradient(70% 55% at 40% 36%,var(--lift),transparent 70%),linear-gradient(to top,color-mix(in srgb,var(--ac) 16%,var(--bg2)),var(--bg2) 62%)}
+.stage3{position:absolute;inset:0;z-index:1}
+.pos{position:absolute;animation:drift 5s ease-in-out infinite alternate}
+.pos:nth-child(2){animation-duration:6.5s}.pos:nth-child(3){animation-duration:7.5s}
+.dof{filter:blur(7px);opacity:.85}.dof2{filter:blur(2.5px)}
+.scene .photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:2}
+.scene .grain{position:absolute;inset:0;z-index:3;opacity:var(--grain);mix-blend-mode:overlay;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
+.scene .vig{position:absolute;inset:0;z-index:4;background:radial-gradient(120% 90% at 50% 38%,transparent 45%,var(--vig)),linear-gradient(to top,var(--bg) 0%,transparent 48%)}
+.scene .copy{position:absolute;inset:0;z-index:5;padding:44px 56px;display:flex;flex-direction:column;justify-content:space-between;pointer-events:none}
+.copy .brand{display:flex;gap:10px;align-items:center;font-weight:600;font-size:17px}.copy .brand svg{width:26px;height:26px;color:var(--ac)}
+.auth h2{font-size:clamp(52px,7vw,108px);font-weight:800;line-height:.88;text-transform:uppercase;max-width:9ch;text-wrap:balance}
+.copy p{color:var(--tx2);max-width:44ch;margin-top:16px}
+.auth form{align-self:center;justify-self:center;width:min(380px,86%);padding:40px 0}
+.auth h3{font:700 34px/1 'Big Shoulders Display','IBM Plex Sans Arabic',sans-serif;text-transform:uppercase;margin-bottom:8px}
+[dir=rtl] .steps i{left:0;right:0}[dir=rtl] .auth .scene .copy{direction:rtl}
+::view-transition-old(root),::view-transition-new(root){animation:none;mix-blend-mode:normal}::view-transition-new(root){z-index:2}
+@media(max-width:900px){.app{padding-inline-start:0;padding-top:58px}aside{bottom:auto;width:100%;height:58px;display:flex;align-items:center;padding:0 8px;border-inline-end:0;border-bottom:1px solid var(--line)}aside:hover,aside:focus-within{width:100%}aside .brand{margin:0;padding:0 14px}.nav{display:flex}.nav a{padding-inline:14px;height:58px}.split,.charts,.auth,.twin{grid-template-columns:1fr}.kpis,.reads{grid-template-columns:1fr 1fr}.kpis .card:nth-child(2){border-inline-end:0}.scene{min-height:62vh}.scene .copy{padding:26px}header,main{padding-inline:18px}}
+@media(prefers-reduced-motion:reduce){*,::before,::after{animation:none!important;transition:none!important}.f{--x:0px}}
+</style></head><body>
+<svg width="0" height="0" style="position:absolute"><defs>
+<symbol id="shield" viewBox="0 0 24 24"><path d="M12 3 4.5 6v5.5c0 4.5 3.1 8 7.5 9.5 4.4-1.5 7.5-5 7.5-9.5V6L12 3Z"/><path d="m9 12 2.2 2.2L15.5 10"/></symbol>
+<symbol id="temp" viewBox="0 0 24 24"><path d="M10 14.5V5a2 2 0 1 1 4 0v9.5a4 4 0 1 1-4 0Z"/><path d="M12 9v7"/></symbol>
+<symbol id="drop" viewBox="0 0 24 24"><path d="M12 3.5s6 6.2 6 10.3a6 6 0 0 1-12 0C6 9.700 12 3.500 12 3.500Z"/></symbol>
+<symbol id="lock" viewBox="0 0 24 24"><rect x="5" y="10.500" width="14" height="9.500" rx="2"/><path d="M8 10.500V8a4 4 0 0 1 8 0v2.500"/></symbol>
+<symbol id="unlock" viewBox="0 0 24 24"><rect x="5" y="10.500" width="14" height="9.500" rx="2"/><path d="M8 10.500V8a4 4 0 0 1 7.700-1.500"/></symbol>
+<symbol id="shock" viewBox="0 0 24 24"><path d="M3 12h3l2-6 4 12 2.500-8L16 12h5"/></symbol>
+<symbol id="alert" viewBox="0 0 24 24"><path d="M12 4 3 19.500h18L12 4Z"/><path d="M12 10v4.500M12 17.200v.1"/></symbol>
+<symbol id="box" viewBox="0 0 24 24"><path d="m3.500 7.500 8.500-4 8.500 4v9l-8.500 4-8.500-4v-9Z"/><path d="m3.500 7.500 8.500 4 8.500-4M12 11.500v9"/></symbol>
+<symbol id="sig" viewBox="0 0 24 24"><path d="M5 18.500a10 10 0 0 1 0-13M19 5.500a10 10 0 0 1 0 13M8.500 15a5 5 0 0 1 0-6M15.500 9a5 5 0 0 1 0 6"/><circle cx="12" cy="12" r="1"/></symbol>
+<symbol id="mon" viewBox="0 0 24 24"><rect x="3" y="4.500" width="18" height="12" rx="2"/><path d="M8 20h8M12 16.500V20M6.500 11l3-3 3 3 3-2.500"/></symbol>
+<symbol id="users" viewBox="0 0 24 24"><circle cx="9" cy="8.500" r="3.200"/><path d="M3.500 19c.5-3.200 2.800-5 5.500-5s5 1.800 5.500 5M16 5.500a3 3 0 0 1 0 6M17.500 14.200c1.700.6 2.800 2.200 3 4.800"/></symbol>
+<symbol id="sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.500v2M12 19.500v2M2.500 12h2M19.500 12h2M5.300 5.300l1.400 1.400M17.300 17.300l1.400 1.400M5.300 18.700l1.400-1.400M17.300 6.700l1.400-1.400"/></symbol>
+<symbol id="moon" viewBox="0 0 24 24"><path d="M20 14.500A8.500 8.500 0 0 1 9.500 4a8.500 8.500 0 1 0 10.500 10.500Z"/></symbol>
+<symbol id="out" viewBox="0 0 24 24"><path d="M14 4.500h4a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2h-4M10 8l-4 4 4 4M6 12h10"/></symbol>
+<symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="check" viewBox="0 0 24 24"><path d="m5 12.500 4.500 4.500L19 7.500"/></symbol>
+</defs></svg>
+<div id="root"></div><div id="uv" aria-hidden="true"></div><div id="toast" role="status" aria-live="polite"></div><dialog id="dlg"></dialog>
+<script>
+const $=s=>document.querySelector(s);
+const ic=n=>`<svg class="i" aria-hidden="true"><use href="#${n}"/></svg>`;
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+/* Thresholds mirror application.properties (alert.temperature.max / alert.humidity.max) */
+const TMAX=30,HMAX=80,PK=['CREATED','IN_TRANSIT','DELIVERED','CANCELLED'],CT=['AVAILABLE','IN_TRANSIT','ARRIVED','MAINTENANCE'];
+let S={enter:true,lang:localStorage.getItem('lang')||(['fr','ar'].includes(navigator.language.slice(0,2))?navigator.language.slice(0,2):'en'),u:JSON.parse(localStorage.getItem('u')||'null'),tab:'monitor',sel:null,D:{},auth:'login',err:''};
+const admin=()=>S.u?.role==='ADMIN';
+async function api(p,o={}){
+  const r=await fetch('/api'+p,{method:o.method||'GET',headers:{'Content-Type':'application/json',...(S.u?{Authorization:'Bearer '+S.u.token}:{})},body:o.body?JSON.stringify(o.body):undefined});
+  if(r.status===401&&S.u&&!p.startsWith('/auth')){logout();throw new Error('Session expired')}
+  let j=null;try{j=await r.json()}catch{}
+  if(!r.ok)throw new Error(j?.message||j?.error||'Request failed ('+r.status+')');return j}
+function toast(m,e){const t=$('#toast');t.textContent=trs(m);t.className='on'+(e?' err':'');clearTimeout(t.t);t.t=setTimeout(()=>t.className='',3200)}
+function theme(e){const n=document.documentElement.dataset.theme==='dark'?'light':'dark',go=()=>{document.documentElement.dataset.theme=n;try{localStorage.setItem('theme',n)}catch{}render()};
+ if(!e||!document.startViewTransition||matchMedia('(prefers-reduced-motion:reduce)').matches)return go();
+ const b=e.currentTarget.getBoundingClientRect(),x=b.left+b.width/2,y=b.top+b.height/2,r=Math.hypot(Math.max(x,innerWidth-x),Math.max(y,innerHeight-y));
+ document.startViewTransition(go).ready.then(()=>document.documentElement.animate({clipPath:[`circle(0 at ${x}px ${y}px)`,`circle(${r}px at ${x}px ${y}px)`]},{duration:700,easing:'cubic-bezier(.4,0,.2,1)',pseudoElement:'::view-transition-new(root)'}))}
+const themeBtn=()=>{const d=document.documentElement.dataset.theme==='dark';return `<button class="btn ic" onclick="theme(event)" aria-label="Switch to ${d?'light':'dark'} mode" title="Switch to ${d?'light':'dark'} mode">${ic(d?'sun':'moon')}</button>`};
+const fmt=s=>s?new Date(s).toLocaleString(S.lang==='ar'?'ar-TN':S.lang,{dateStyle:'medium',timeStyle:'short'}):'—';
+const ago=s=>{if(!s)return'no data';const m=Math.round((Date.now()-new Date(s))/6e4);return m<1?'just now':m<60?m+' min ago':m<1440?Math.round(m/60)+' h ago':Math.round(m/1440)+' d ago'};
+const lbl=s=>String(s||'').replace(/_/g,' ').toLowerCase().replace(/^./,c=>c.toUpperCase());
+const link=(r)=>{if(!r?.recordedAt)return['mute','No data'];const m=(Date.now()-new Date(r.recordedAt))/6e4;return m<2?['ok','Connected']:m<10?['warn','Delayed']:['mute','Offline']};
+const chip=(k,t)=>`<span class="chip ${k}">${t}</span>`;
+/* ---------- auth ---------- */
+function authView(){const reg=S.auth==='register';return `<div class="auth"><section class="scene"><div class="stage3">
+<div class="pos dof" style="left:4%;top:8%">${cube({s:140,p:46,dur:34})}</div>
+<div class="pos" style="left:24%;top:16%">${cube({s:220,p:38,dur:28})}</div>
+<div class="pos dof2" style="left:66%;top:44%">${cube({s:130,open:true,tone:'crit',p:80,dur:22})}</div></div>
+<img class="photo" src="img/hero.jpg" alt="" onerror="this.remove()"><div class="grain"></div><div class="vig"></div>
+<div class="copy"><div class="brand">${ic('shield')}Sentinel</div><div><h2>Every parcel, sealed and watched.</h2><p>Live temperature, humidity, seal integrity and position from each container, with alerts the moment something changes.</p></div></div></section>
+<form onsubmit="return submitAuth(event)"><h3>${reg?'Create account':'Sign in'}</h3><p style="color:var(--tx2)">${reg?'Customer access to your parcels.':'Access the monitoring console.'}</p>
+${reg?'<label for="un">Username</label><input id="un" required minlength="3" autocomplete="username">':''}
+<label for="em">Email</label><input id="em" type="email" required autocomplete="email">
+<label for="pw">Password</label><input id="pw" type="password" required minlength="8" autocomplete="${reg?'new':'current'}-password">
+<div class="err" role="alert">${esc(S.err)}</div>
+<button class="btn p" style="width:100%;justify-content:center;margin-top:6px">${reg?'Create account':'Sign in'}</button>
+<p style="margin-top:16px;font-size:13px;color:var(--tx2)">${reg?'Have an account?':'New customer?'} <button type="button" class="link" onclick="S.auth='${reg?'login':'register'}';S.err='';render()">${reg?'Sign in':'Create account'}</button></p>
+<div style="position:fixed;top:16px;inset-inline-end:16px;display:flex;gap:8px">${langSel()}${themeBtn()}</div></form></div>`}
+async function submitAuth(e){e.preventDefault();S.err='';const em=$('#em').value,pw=$('#pw').value;
+ try{if(S.auth==='register'){await api('/auth/register',{method:'POST',body:{username:$('#un').value,email:em,password:pw}})}
+  const u=await api('/auth/login',{method:'POST',body:{email:em,password:pw}});S.u=u;localStorage.setItem('u',JSON.stringify(u));S.tab=u.role==='ADMIN'?'monitor':'packages';S.sel=null;S.enter=true;await load();render()}
+ catch(x){S.err=x.message;render()}return false}
+function logout(){S.u=null;S.seen=null;S.D={};localStorage.removeItem('u');render()}
+/* ---------- data ---------- */
+async function load(){if(!S.u)return;
+ try{if(admin()){const[c,p,a]=await Promise.all([api('/admin/containers'),api('/admin/packages'),api('/admin/alerts')]);
+   const H={};await Promise.all(c.map(async x=>{try{H[x.containerCode]=(await api(`/admin/containers/${x.containerCode}/sensor-data?limit=60`)).sort((a,b)=>new Date(a.recordedAt)-new Date(b.recordedAt))}catch{H[x.containerCode]=[]}}));
+   const ids=a.filter(x=>!x.resolved);if(S.seen)ids.filter(x=>!S.seen.has(x.id)).forEach(x=>toast('New alert · '+lbl(x.type)+' · '+x.containerCode,1));S.fresh=new Set(S.seen?ids.filter(x=>!S.seen.has(x.id)).map(x=>x.id):[]);S.seen=new Set([...(S.seen||[]),...ids.map(x=>x.id)]);S.D={c,p,a,H};if(S.tab==='users')S.D.u=await api('/admin/users');
+   if(!S.sel||!c.find(x=>x.containerCode===S.sel))S.sel=c[0]?.containerCode||null}
+  else{const p=await api('/packages/my');S.D={p};if(!S.sel||!p.find(x=>x.packageCode===S.sel))S.sel=p[0]?.packageCode||null;
+   if(S.sel){const[t,a,h]=await Promise.all([api(`/packages/${S.sel}/tracking`),api(`/packages/${S.sel}/alerts`),api(`/packages/${S.sel}/history?limit=60`)]);S.D.t=t;S.D.a=a;S.D.h=h.sort((x,y)=>new Date(x.recordedAt)-new Date(y.recordedAt))}}
+ }catch(x){if(S.u)toast(x.message,1)}}
+/* ---------- components ---------- */
+function spark(v,max,unit,name){if(v.length<2)return `<div class="cap"><span>${name}</span></div><div class="empty">Awaiting more readings</div>`;
+ const W=360,H=130,P=6,hi=Math.max(max*1.08,...v),lo=Math.min(0,...v),x=i=>P+i*(W-2*P)/(v.length-1),y=n=>H-P-(n-lo)/(hi-lo)*(H-2*P);
+ const pts=v.map((n,i)=>`${x(i).toFixed(1)},${y(n).toFixed(1)}`).join(' ');
+ return `<div class="cap"><span>${name}</span><span>limit ${max}${unit}</span></div><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${name} history, latest ${v.at(-1)}${unit}">
+ ${[0,.5,1].map(f=>`<line x1="0" x2="${W}" y1="${P+f*(H-2*P)}" y2="${P+f*(H-2*P)}" stroke="var(--line)" stroke-width="1"/>`).join('')}
+ <line x1="0" x2="${W}" y1="${y(max)}" y2="${y(max)}" stroke="var(--warn)" stroke-dasharray="4 4"/>
+ <polygon points="${x(0)},${H-P} ${pts} ${x(v.length-1)},${H-P}" fill="var(--ac)" opacity=".1"/>
+ <polyline pathLength="1" points="${pts}" fill="none" stroke="var(--ac)" stroke-width="2" stroke-linejoin="round"/>
+ <circle cx="${x(v.length-1)}" cy="${y(v.at(-1))}" r="3.500" fill="var(--ac)"/>${v.map((n,i)=>`<circle cx="${x(i)}" cy="${y(n)}" r="7" fill="transparent"><title>${n}${unit}</title></circle>`).join("")}</svg>`}
+const cube=o=>`<div class="stage${o.shock?' shock':''}" style="--s:${o.s||120}px;--tc:var(--${o.tone||'ok'});--p:${Math.round(o.p||40)}%"><div class="cube${o.open?' open':''}" style="animation-duration:${o.dur||24}s"><i class="f fr"><b class="gauge"></b><em>${esc(o.label||'')}</em></i><i class="f bk"></i><i class="f rt"></i><i class="f lf"></i><i class="f bt"></i><i class="f lid"><u></u></i></div></div>`;
+const twin=(r,pk)=>{const bad=r&&(r.opened||r.shockDetected),warn=r&&(r.temperature>TMAX||r.humidity>HMAX);
+ return `<div class="twin">${cube({s:112,open:r?.opened,shock:r?.shockDetected,label:pk?.packageCode||r?.containerCode||'—',p:Math.min(100,(r?.temperature||0)/(TMAX*1.3)*100),tone:bad?'crit':warn?'warn':'ok'})}${reads(r)}</div>`};
+function reads(r){const t=r?.temperature,h=r?.humidity,tl=t>TMAX?'warn':'ok',hl=h>HMAX?'warn':'ok';
+ const n=(v,u)=>v==null?'—':`${(+v).toFixed(1)}<small> ${u}</small>`;
+ return `<div class="reads"><div class="read ${t==null?'':tl}"><div class="l">${ic('temp')}Temperature</div><div class="v">${n(t,'°C')}</div></div>
+ <div class="read ${h==null?'':hl}"><div class="l">${ic('drop')}Humidity</div><div class="v">${n(h,'%')}</div></div>
+ <div class="read ${r?(r.opened?'crit':'ok'):''}"><div class="l">${ic(r?.opened?'unlock':'lock')}Seal</div><div class="v">${r?(r.opened?'Opened':'Intact'):'—'}</div></div>
+ <div class="read ${r?(r.shockDetected?'crit':'ok'):''}"><div class="l">${ic('shock')}Impact</div><div class="v">${r?(r.shockDetected?'Detected':'None'):'—'}</div></div></div>`}
+const alertItem=(a,can)=>{const k=a.type==='DOOR_OPENED'||a.type==='SHOCK_DETECTED'?'crit':'warn';
+ return `<div class="alert ${a.resolved?'done':k}${S.fresh?.has(a.id)?' fresh':''}">${ic(a.resolved?'check':'alert')}<div><b>${lbl(a.type)}</b> · ${esc(a.containerCode||'')} ${a.packageCode?'· '+esc(a.packageCode):''}<small>${esc(a.message)} — ${fmt(a.createdAt)}</small></div>
+ ${can&&!a.resolved?`<button class="btn" onclick="resolve(${a.id})">Resolve</button>`:''}</div>`};
+const alerts=(l,can)=>l.length?[...l].sort((a,b)=>a.resolved-b.resolved||new Date(b.createdAt)-new Date(a.createdAt)).slice(0,can?50:20).map(a=>alertItem(a,can)).join(''):`<div class="empty">No alerts recorded.</div>`;
+const STEPS=['CREATED','IN_TRANSIT','DELIVERED'];
+const stepper=s=>s==='CANCELLED'?`<div style="margin-bottom:14px">${chip('crit','Cancelled')}</div>`:`<div class="steps" role="img" aria-label="Status: ${lbl(s)}">${STEPS.map((x,k)=>`<div class="${k<=STEPS.indexOf(s)?'on':''}"><i></i>${lbl(x)}</div>`).join('')}</div>`;
+function pkgInfo(p){return p?stepper(p.status)+`<dl><dt>Parcel</dt><dd>${esc(p.packageCode)}</dd><dt>Status</dt><dd>${lbl(p.status)}</dd><dt>Location</dt><dd>${esc(p.currentLocation||'—')}</dd><dt>Est. delivery</dt><dd>${fmt(p.estimatedDelivery)}</dd><dt>Customer</dt><dd>${esc(p.customerEmail||'—')}</dd><dt>Container</dt><dd>${esc(p.containerCode||'—')}</dd></dl>`:`<div class="empty">No parcel assigned to this container.</div>`}
+/* ---------- pages ---------- */
+function monitor(){const{c=[],p=[],a=[],H={}}=S.D,last=k=>H[k]?.at(-1);
+ const open=a.filter(x=>!x.resolved),on=c.filter(x=>link(last(x.containerCode))[0]==='ok').length,breach=p.filter(x=>x.opened).length;
+ const kpi=(l,v,k)=>`<div class="card kpi"><span>${l}</span><b ${k?`style="color:var(--${k})"`:''}>${v}</b></div>`;
+ const cur=c.find(x=>x.containerCode===S.sel),h=H[S.sel]||[],r=h.at(-1),pk=p.find(x=>x.containerCode===S.sel),[lk,lt]=link(r);
+ const lvl=x=>{const r=last(x);return !r?'':r.opened||r.shockDetected?'crit':(r.temperature>TMAX||r.humidity>HMAX)?'warn':'ok'};
+ return `<div class="kpis">${kpi('Sensors connected',`${on}/${c.length}`)}${kpi('Open alerts',open.length,open.length?'warn':'')}${kpi('Parcels in transit',p.filter(x=>x.status==='IN_TRANSIT').length)}${kpi('Seals breached',breach,breach?'crit':'')}</div>
+ <div class="split"><div class="card"><h2>Containers</h2>${c.length?c.map(x=>`<div class="row" role="button" tabindex="0" aria-selected="${x.containerCode===S.sel}" onclick="pick('${x.containerCode}')" onkeydown="if(event.key==='Enter')pick('${x.containerCode}')"><div><b>${esc(x.containerCode)}</b><small>${esc(x.name||'')} · ${ago(last(x.containerCode)?.recordedAt)}</small></div><span class="dot ${lvl(x.containerCode)}" title="${lvl(x.containerCode)||'no data'}"></span></div>`).join(''):'<div class="empty">No containers yet.</div>'}</div>
+ <div class="stack">${cur?`<div class="card"><h2><span>${esc(cur.containerCode)} · ${esc(cur.name||'')}</span><span style="display:flex;gap:8px">${chip(lk,lt+' · '+ago(r?.recordedAt))}${chip('',lbl(cur.status))}</span></h2>${twin(r,pk)}
+  ${chartsHTML(h)}</div>
+  <div class="split" style="grid-template-columns:1fr 1fr"><div class="card"><h2>Parcel tracking</h2>${pkgInfo(pk)}</div><div class="card"><h2>Position</h2><dl><dt>Latitude</dt><dd>${r?.latitude??cur.latitude??'—'}</dd><dt>Longitude</dt><dd>${r?.longitude??cur.longitude??'—'}</dd><dt>Last reading</dt><dd>${fmt(r?.recordedAt)}</dd></dl></div></div>
+  ${histCard(h)}`:'<div class="card empty">Create a container to begin monitoring.</div>'}
+  <div class="card"><h2>Security alerts</h2>${alerts(a.filter(x=>!S.sel||x.containerCode===S.sel),1)}</div></div></div>`}
+function table(cols,rows){return `<div class="card scroll"><table><thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${rows.join('')||`<tr><td colspan="${cols.length}" class="empty">Nothing here yet.</td></tr>`}</tbody></table></div>`}
+const sel=(opts,cur)=>`<select class="sm" aria-label="Change status">${opts.map(o=>`<option ${o===cur?'selected':''} value="${o}">${lbl(o)}</option>`).join('')}</select>`;
+const chartsHTML=h=>`<div class="charts" style="margin-top:16px"><div>${spark(h.slice(-30).map(x=>x.temperature),TMAX,'°C','Temperature')}</div><div>${spark(h.slice(-30).map(x=>x.humidity),HMAX,'%','Humidity')}</div></div>`;
+const histCard=h=>`<div class="card"><h2>Monitoring history</h2><div class="scroll"><table><thead><tr><th>Time</th><th>Temp</th><th>Humidity</th><th>Seal</th><th>Impact</th></tr></thead><tbody>${[...h].reverse().slice(0,8).map(x=>`<tr><td>${fmt(x.recordedAt)}</td><td>${x.temperature}°C</td><td>${x.humidity}%</td><td>${x.opened?chip('crit','Opened'):chip('ok','Intact')}</td><td>${x.shockDetected?chip('crit','Detected'):chip('','None')}</td></tr>`).join('')||'<tr><td colspan="5" class="empty">No readings yet.</td></tr>'}</tbody></table></div></div>`;
+const pages={monitor,
+ packages(){const{p=[]}=S.D;if(admin()){const q=(S.q||'').toLowerCase();return `<div style="display:flex;gap:10px;margin-bottom:14px"><input id="q" type="search" aria-label="Search parcels" placeholder="Search parcels, customers, containers" style="max-width:340px" value="${esc(S.q||'')}" oninput="S.q=this.value;render();const e=$('#q');e.focus();e.setSelectionRange(99,99)"><button class="btn p" onclick="newPkg()">${ic('plus')}New parcel</button></div>`+table(['Parcel','Customer','Container','Location','Seal','Status'],p.filter(x=>JSON.stringify(x).toLowerCase().includes(q)).map(x=>`<tr><td><b>${esc(x.packageCode)}</b></td><td>${esc(x.customerEmail)}</td><td>${esc(x.containerCode)}</td><td>${esc(x.currentLocation||'—')}</td><td>${x.opened?chip('crit','Opened'):chip('ok','Intact')}</td><td>${sel(PK,x.status)}</td></tr>`))}
+  const t=S.D.t,h=S.D.h||[],r=h.at(-1)||t,pk=p.find(x=>x.packageCode===S.sel),[lk,lt]=link(h.at(-1));
+  return `<div class="split"><div class="card"><h2>My parcels</h2>${p.length?p.map(x=>`<div class="row" role="button" tabindex="0" aria-selected="${x.packageCode===S.sel}" onclick="pickP('${x.packageCode}')"><div><b>${esc(x.packageCode)}</b><small>${lbl(x.status)} · ${esc(x.currentLocation||'')}</small></div>${x.opened?chip('crit','Opened'):chip('ok','Sealed')}</div>`).join(''):'<div class="empty">No parcels assigned to you yet.</div>'}</div>
+  <div class="stack">${pk?`<div class="card"><h2><span>Live conditions</span>${chip(lk,lt+' · '+ago(h.at(-1)?.recordedAt))}</h2>${twin(r,pk)}${chartsHTML(h)}</div><div class="card"><h2>Parcel information</h2>${pkgInfo(pk)}</div>${histCard(h)}<div class="card"><h2>Alerts</h2>${alerts(S.D.a||[])}</div>`:''}</div></div>`},
+ containers(){return `<div style="margin-bottom:14px"><button class="btn p" onclick="newCont()">${ic('plus')}New container</button></div>`+table(['Code','Name','Link','Position','Status'],(S.D.c||[]).map(x=>{const[k,t]=link(S.D.H[x.containerCode]?.at(-1));return `<tr><td><b>${esc(x.containerCode)}</b></td><td>${esc(x.name)}</td><td>${chip(k,t)}</td><td>${x.latitude??'—'}, ${x.longitude??'—'}</td><td data-c="${x.containerCode}">${sel(CT,x.status)}</td></tr>`}))},
+ alerts(){return `<div class="card">${alerts(S.D.a||[],1)}</div>`},
+ users(){return table(['Name','Email','Role'],(S.D.u||[]).map(x=>`<tr><td>${esc(x.username||x.name)}</td><td>${esc(x.email)}</td><td>${x.email===S.u.email?chip('',lbl(x.role)):sel(['CUSTOMER','ADMIN'],x.role)}</td></tr>`))}};
+/* status selects: bind code via closest row */
+document.addEventListener('change',async e=>{const s=e.target.closest('select.sm');if(!s||s.classList.contains('lang'))return;
+ if(S.tab==='users'){const email=s.closest('tr').children[1].textContent;try{await api('/admin/users/role',{method:'PATCH',body:{email,role:s.value}});toast('Role updated')}catch(x){toast(x.message,1)}await load();render();return}
+ const tr=s.closest('tr'),code=tr.querySelector('b').textContent,pkg=S.tab==='packages';
+ try{await api(`/admin/${pkg?'packages':'containers'}/${code}/status`,{method:'PATCH',body:{status:s.value}});toast('Status updated');await load();render()}catch(x){toast(x.message,1);await load();render()}},true);
+/* ---------- actions ---------- */
+const pick=k=>{S.sel=k;render()};
+async function pickP(k){S.sel=k;await load();render()}
+async function resolve(id){try{await api(`/admin/alerts/${id}/resolve`,{method:'PATCH'});toast('Alert resolved');await load();render()}catch(x){toast(x.message,1)}}
+function modal(title,fields,fn){const d=$('#dlg');d.innerHTML=`<form method="dialog" onsubmit="return false"><h3 style="margin-bottom:4px">${title}</h3>${fields.map(([id,l,t])=>`<label for="f_${id}">${l}</label><input id="f_${id}" type="${t||'text'}" ${t==='email'||id==='code'?'required':''}>`).join('')}<div class="err" id="ferr"></div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px"><button class="btn" onclick="$('#dlg').close()">Cancel</button><button class="btn p" id="fok">Create</button></div></form>`;
+ d.showModal();applyLang();$('#fok').onclick=async()=>{try{await fn(Object.fromEntries(fields.map(([id])=>[id,$('#f_'+id).value])));d.close();toast('Created');await load();render()}catch(x){$('#ferr').textContent=x.message}}}
+const newCont=()=>modal('New container',[['code','Container code'],['name','Name']],v=>api('/admin/containers',{method:'POST',body:{containerCode:v.code,name:v.name}}));
+const newPkg=()=>modal('New parcel',[['email','Customer email','email'],['code','Container code'],['loc','Current location']],v=>api('/admin/packages',{method:'POST',body:{customerEmail:v.email,containerCode:v.code,currentLocation:v.loc}}));
+addEventListener('pointermove',e=>{const r=document.documentElement.style;r.setProperty('--mx',e.clientX+'px');r.setProperty('--my',e.clientY+'px')});
+/* ---------- i18n (EN / FR / AR, RTL) + motion ---------- */
+const LANGS={en:'English',fr:'Français',ar:'العربية'},DICT={};
+`Sign in|Se connecter|تسجيل الدخول
+Create account|Créer un compte|إنشاء حساب
+Access the monitoring console.|Accédez à la console de surveillance.|ادخل إلى لوحة المراقبة.
+Customer access to your parcels.|Accès client à vos colis.|وصول العملاء إلى طرودك.
+Username|Nom d'utilisateur|اسم المستخدم
+Email|E-mail|البريد الإلكتروني
+Password|Mot de passe|كلمة المرور
+Have an account?|Déjà un compte ?|لديك حساب؟
+New customer?|Nouveau client ?|عميل جديد؟
+Every parcel, sealed and watched.|Chaque colis, scellé et surveillé.|كل طرد، مختوم ومراقَب.
+Live temperature, humidity, seal integrity and position from each container, with alerts the moment something changes.|Température, humidité, intégrité du scellé et position de chaque conteneur, avec des alertes dès qu'un changement survient.|درجة الحرارة والرطوبة وسلامة الختم والموقع لكل حاوية، مع تنبيهات فور حدوث أي تغيير.
+Smart Package Surveillance|Surveillance intelligente des colis|المراقبة الذكية للطرود
+Monitor|Supervision|المراقبة
+Parcels|Colis|الطرود
+My parcels|Mes colis|طرودي
+Containers|Conteneurs|الحاويات
+Alerts|Alertes|التنبيهات
+Users|Utilisateurs|المستخدمون
+Sign out|Déconnexion|تسجيل الخروج
+Switch to light mode|Passer au mode clair|التبديل إلى الوضع الفاتح
+Switch to dark mode|Passer au mode sombre|التبديل إلى الوضع الداكن
+Language|Langue|اللغة
+Sensors connected|Capteurs connectés|الحساسات المتصلة
+Open alerts|Alertes ouvertes|تنبيهات مفتوحة
+Parcels in transit|Colis en transit|طرود قيد النقل
+Seals breached|Scellés rompus|أختام مفتوحة
+Temperature|Température|الحرارة
+Humidity|Humidité|الرطوبة
+Seal|Scellé|الختم
+Impact|Choc|صدمة
+Opened|Ouvert|مفتوح
+Intact|Intact|سليم
+Sealed|Scellé|مختوم
+Detected|Détecté|مرصود
+None|Aucun|لا يوجد
+limit|limite|الحد
+Connected|Connecté|متصل
+Delayed|Retardé|متأخر
+Offline|Hors ligne|غير متصل
+No data|Aucune donnée|لا بيانات
+just now|à l'instant|الآن
+Parcel tracking|Suivi du colis|تتبع الطرد
+Position|Position|الموقع
+Latitude|Latitude|خط العرض
+Longitude|Longitude|خط الطول
+Last reading|Dernière mesure|آخر قراءة
+Monitoring history|Historique de surveillance|سجل المراقبة
+Time|Heure|الوقت
+Security alerts|Alertes de sécurité|تنبيهات الأمان
+No alerts recorded.|Aucune alerte enregistrée.|لا توجد تنبيهات.
+Resolve|Résoudre|حل
+Alert resolved|Alerte résolue|تم حل التنبيه
+Live conditions|Conditions en direct|الظروف المباشرة
+Parcel information|Informations du colis|معلومات الطرد
+Parcel|Colis|الطرد
+Customer|Client|العميل
+Container|Conteneur|الحاوية
+Location|Emplacement|الموقع
+Est. delivery|Livraison estimée|التسليم المقدر
+Status|Statut|الحالة
+Created|Créé|تم الإنشاء
+In transit|En transit|قيد النقل
+Delivered|Livré|تم التسليم
+Cancelled|Annulé|ملغى
+Available|Disponible|متاح
+Arrived|Arrivé|وصل
+Maintenance|Maintenance|صيانة
+Name|Nom|الاسم
+Role|Rôle|الدور
+Admin|Administrateur|مشرف
+Code|Code|الرمز
+Link|Liaison|الاتصال
+New parcel|Nouveau colis|طرد جديد
+New container|Nouveau conteneur|حاوية جديدة
+Create|Créer|إنشاء
+Cancel|Annuler|إلغاء
+Container code|Code du conteneur|رمز الحاوية
+Customer email|E-mail du client|بريد العميل
+Current location|Emplacement actuel|الموقع الحالي
+Search parcels, customers, containers|Rechercher colis, clients, conteneurs|ابحث عن طرد أو عميل أو حاوية
+Search parcels|Rechercher des colis|ابحث في الطرود
+Nothing here yet.|Rien pour l'instant.|لا شيء بعد.
+No containers yet.|Aucun conteneur.|لا حاويات بعد.
+Create a container to begin monitoring.|Créez un conteneur pour commencer.|أنشئ حاوية لبدء المراقبة.
+No parcels assigned to you yet.|Aucun colis ne vous est attribué.|لا توجد طرود مسندة إليك.
+Awaiting more readings|En attente de plus de mesures|بانتظار مزيد من القراءات
+No readings yet.|Aucune mesure.|لا قراءات بعد.
+No parcel assigned to this container.|Aucun colis dans ce conteneur.|لا يوجد طرد في هذه الحاوية.
+Status updated|Statut mis à jour|تم تحديث الحالة
+Change status|Changer le statut|تغيير الحالة
+New alert|Nouvelle alerte|تنبيه جديد
+Door opened|Porte ouverte|فتح الباب
+Shock detected|Choc détecté|رصد صدمة
+Temperature high|Température élevée|حرارة مرتفعة
+Humidity high|Humidité élevée|رطوبة مرتفعة
+Session expired|Session expirée|انتهت الجلسة
+Role updated|Rôle mis à jour|تم تحديث الدور`.split('\n').forEach(l=>{const[a,f,r]=l.split('|');DICT[a]={fr:f,ar:r}});
+const RX=new RegExp('(?<![A-Za-z])(?:'+Object.keys(DICT).sort((a,b)=>b.length-a.length).map(k=>k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|')+')(?![A-Za-z])','g');
+const trs=s=>S.lang==='en'?s:s.replace(/(\d+) (min|h|d) ago/g,(m,n,u)=>S.lang==='fr'?`il y a ${n} ${u==='d'?'j':u}`:`منذ ${n} ${{min:'د',h:'س',d:'ي'}[u]}`).replace(RX,m=>DICT[m]?.[S.lang]||m);
+function applyLang(){document.documentElement.lang=S.lang;document.documentElement.dir=S.lang==='ar'?'rtl':'ltr';if(S.lang==='en')return;
+ const w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);let n;while(n=w.nextNode()){if(n.parentNode.closest('script,style,select.lang'))continue;const v=trs(n.nodeValue);if(v!==n.nodeValue)n.nodeValue=v}
+ document.querySelectorAll('[placeholder],[aria-label],[title]').forEach(e=>['placeholder','aria-label','title'].forEach(a=>e.hasAttribute(a)&&e.setAttribute(a,trs(e.getAttribute(a)))))}
+function setLang(v){S.lang=v;try{localStorage.setItem('lang',v)}catch{}render()}
+const langSel=()=>`<select class="sm lang" aria-label="Language" title="Language" onchange="setLang(this.value)">${Object.entries(LANGS).map(([k,v])=>`<option value="${k}" ${k===S.lang?'selected':''}>${v}</option>`).join('')}</select>`;
+function countUp(el){if(matchMedia('(prefers-reduced-motion:reduce)').matches)return;const n=el.firstChild;if(!n||n.nodeType!==3||!/^-?\d+(\.\d+)?$/.test(n.nodeValue.trim()))return;const to=+n.nodeValue,d=(n.nodeValue.split('.')[1]||'').length,t0=performance.now();(function f(t){const k=Math.min(1,(t-t0)/900);n.nodeValue=(to*(1-Math.pow(1-k,3))).toFixed(d);if(k<1)requestAnimationFrame(f)})(t0)}
+function afterRender(){if(!S.enter)return;S.enter=false;const m=$('main');if(!m)return;m.classList.add('enter');m.querySelectorAll('.card,.kpi').forEach((e,i)=>e.style.animationDelay=Math.min(i*55,500)+'ms');m.querySelectorAll('.kpi b,.read .v').forEach(countUp)}
+/* ---------- shell ---------- */
+function nav(t){S.tab=t;S.enter=true;if(!admin())S.sel=S.sel;S.D.u=undefined;load().then(render);render()}
+function render(){const a=document.activeElement;if(a&&a.tagName==='SELECT'&&a.closest('main'))return;
+ if(!S.u){$('#root').innerHTML=authView();applyLang();return}
+ const items=admin()?[['monitor','Monitor','mon'],['packages','Parcels','box'],['containers','Containers','sig'],['alerts','Alerts','alert'],['users','Users','users']]:[['packages','My parcels','box']];
+ if(!items.some(i=>i[0]===S.tab))S.tab=items[0][0];
+ $('#root').innerHTML=`<div class="app"><aside><div class="brand">${ic('shield')}Sentinel</div><nav class="nav" aria-label="Main">${items.map(([k,l,i])=>`<a role="link" tabindex="0" ${S.tab===k?'aria-current="page"':''} onclick="nav('${k}')" onkeydown="if(event.key==='Enter')nav('${k}')">${ic(i)}${l}${k==='alerts'&&(S.D.a||[]).some(x=>!x.resolved)?`<span class="chip crit" style="margin-left:auto">${S.D.a.filter(x=>!x.resolved).length}</span>`:''}</a>`).join('')}</nav></aside>
+ <div><header><h1>${items.find(i=>i[0]===S.tab)[1]}</h1><div class="who"><span>${esc(S.u.name||S.u.email)} · ${lbl(S.u.role)}</span>${langSel()}${themeBtn()}<button class="btn ic" onclick="logout()" aria-label="Sign out" title="Sign out">${ic('out')}</button></div></header><main>${pages[S.tab]()}</main></div></div>`;applyLang();afterRender()}
+render();load().then(render);setInterval(async()=>{if(S.u&&!$('#dlg').open){await load();render()}},5000);
+</script></body></html>
